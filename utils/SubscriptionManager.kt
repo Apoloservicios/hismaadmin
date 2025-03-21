@@ -194,19 +194,19 @@ class SubscriptionManager(
         }
     }
 
-    /**
-     * Cambiar estado de una suscripción
-     */
     suspend fun changeSubscriptionStatus(suscripcionId: String, nuevoEstado: String): Boolean {
         return try {
+            // Actualizar ambos campos: estado (string) y activa (booleano)
+            val updateData = mapOf(
+                "estado" to nuevoEstado,
+                "activa" to (nuevoEstado == "activa"),  // true si estado="activa", false en otro caso
+                "updatedAt" to Timestamp.now()
+            )
+
             db.collection("suscripciones")
                 .document(suscripcionId)
-                .update(
-                    mapOf(
-                        "estado" to nuevoEstado,
-                        "updatedAt" to Timestamp.now()
-                    )
-                ).await()
+                .update(updateData)
+                .await()
             true
         } catch (e: Exception) {
             Log.e(TAG, "Error cambiando estado de suscripción: ${e.message}", e)

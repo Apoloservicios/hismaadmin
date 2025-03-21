@@ -10,6 +10,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -79,7 +80,7 @@ fun SuscripcionesAdminScreen(navController: NavController) {
                 title = { Text("Solicitudes de Suscripción") },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Volver")
                     }
                 }
             )
@@ -120,11 +121,13 @@ fun SuscripcionesAdminScreen(navController: NavController) {
                                         val solicitudId = solicitud["id"] as String
 
                                         // Actualizar estado de la solicitud
+                                        // Actualizar estado de la solicitud
                                         db.collection("solicitudesSuscripcion")
                                             .document(solicitudId)
                                             .update(
                                                 mapOf(
                                                     "estado" to "aprobada",
+                                                    "activa" to true,      // Añadir este campo
                                                     "updatedAt" to Timestamp.now()
                                                 )
                                             ).await()
@@ -155,11 +158,13 @@ fun SuscripcionesAdminScreen(navController: NavController) {
                                         val solicitudId = solicitud["id"] as String
 
                                         // Actualizar estado de la solicitud
+                                        // Actualizar estado de la solicitud
                                         db.collection("solicitudesSuscripcion")
                                             .document(solicitudId)
                                             .update(
                                                 mapOf(
                                                     "estado" to "rechazada",
+                                                    "activa" to false,     // Añadir este campo
                                                     "updatedAt" to Timestamp.now()
                                                 )
                                             ).await()

@@ -4,6 +4,8 @@ import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
+
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -161,13 +163,15 @@ fun AssignSubscriptionDialog(
                     // Crear nueva suscripción (desactivando la anterior si existe)
 
                     // Crear datos de la suscripción
+                    // Crear datos de la suscripción
                     val subscriptionData = hashMapOf(
                         "lubricentroId" to lubricentroId,
                         "planId" to selectedPlan.id,
                         "planNombre" to selectedPlan.nombre,
                         "fechaInicio" to startDate,
                         "fechaFin" to endTimestamp,
-                        "activa" to true,
+                        "estado" to "activa",  // Añadir campo estado como string
+                        "activa" to true,      // Mantener campo activa como booleano
                         "metodoPago" to metodoPago,
                         "precio" to selectedPlan.precio,
                         "createdAt" to Timestamp.now()
@@ -428,7 +432,7 @@ fun AssignSubscriptionDialog(
                                 // Mostrar datos actuales
                                 if (extendCurrentSubscription) {
                                     Spacer(modifier = Modifier.height(8.dp))
-                                    Divider()
+                                    HorizontalDivider()
                                     Spacer(modifier = Modifier.height(8.dp))
 
                                     Text(
@@ -505,7 +509,7 @@ fun AssignSubscriptionDialog(
                                     Text("$${selectedPlan.precio}")
                                 }
 
-                                Divider(
+                                HorizontalDivider(
                                     modifier = Modifier
                                         .fillMaxWidth()
                                         .padding(vertical = 8.dp)
