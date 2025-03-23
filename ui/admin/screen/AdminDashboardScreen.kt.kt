@@ -316,6 +316,15 @@ fun AdminDashboardScreen(navController: NavController) {
                                 Text("Gestionar Planes")
                             }
                         }
+
+// Botón para gestionar solicitudes como un elemento separado
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { navController.navigate(AdminScreen.SubscriptionRequests.route) },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text("Gestionar Solicitudes de Suscripción")
+                        }
                     }
 
                     // Lubricentros recientes

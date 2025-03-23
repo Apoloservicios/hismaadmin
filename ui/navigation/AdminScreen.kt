@@ -9,4 +9,5 @@ sealed class AdminScreen(val route: String) {
         fun createRoute(lubricentroId: String) = "admin_lubricentro_detail_screen/$lubricentroId"
     }
     object SubscriptionPlans : AdminScreen("admin_subscription_plans_screen")
+    object SubscriptionRequests : AdminScreen("subscription_requests_screen")
 }

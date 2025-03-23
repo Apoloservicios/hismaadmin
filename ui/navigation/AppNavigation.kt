@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.hismaadm.ui.admin.screen.*
+import com.example.hismaadm.ui.admin.screen.SubscriptionRequestsScreen
 
 @Composable
 fun AdminNavigation() {
@@ -32,5 +33,10 @@ fun AdminNavigation() {
         composable(AdminScreen.SubscriptionPlans.route) {
             AdminSubscriptionPlansScreen(navController)
         }
+        // Añadir esta composable
+        composable(AdminScreen.SubscriptionRequests.route) {
+            SubscriptionRequestsScreen(navController)
+        }
+
     }
 }

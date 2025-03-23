@@ -14,7 +14,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.*
-
+import com.example.hismaadm.model.SubscriptionRequest
+import kotlinx.coroutines.tasks.await
 /**
  * Clase para manejar todas las operaciones relacionadas con las suscripciones
  * en la aplicación de administración
@@ -217,7 +218,7 @@ class SubscriptionManager(
     /**
      * Obtener solicitudes de suscripción pendientes
      */
-    suspend fun getPendingRequests(): List<Map<String, Any>> {
+    suspend fun getPendingRequests(): List<SubscriptionRequest> {
         try {
             val snapshot = db.collection("solicitudesSuscripcion")
                 .whereEqualTo("estado", "pendiente")
@@ -225,21 +226,33 @@ class SubscriptionManager(
                 .get()
                 .await()
 
-            Log.d(TAG, "Solicitudes encontradas: ${snapshot.documents.size}")
+            val requests = mutableListOf<SubscriptionRequest>()
 
-            return snapshot.documents.mapNotNull { doc ->
+            for (doc in snapshot.documents) {
                 try {
-                    Log.d(TAG, "Procesando documento ${doc.id}: ${doc.data}")
-                    if (doc.data != null) {
-                        val data = HashMap<String, Any>(doc.data!!)
-                        data["id"] = doc.id
-                        data
-                    } else null
+                    // Obtener el nombre del lubricentro para mostrar
+                    val lubricentroId = doc.getString("lubricentroId") ?: continue
+                    val lubDoc = db.collection("lubricentros").document(lubricentroId).get().await()
+                    val lubricentroName = lubDoc.getString("nombreFantasia") ?: lubricentroId
+
+                    val request = SubscriptionRequest(
+                        id = doc.id,
+                        lubricentroId = lubricentroId,
+                        lubricentroName = lubricentroName,
+                        tipoSuscripcion = doc.getString("tipoSuscripcion") ?: "",
+                        isPaqueteAdicional = doc.getBoolean("isPaqueteAdicional") ?: false,
+                        estado = doc.getString("estado") ?: "pendiente",
+                        createdAt = doc.getTimestamp("createdAt") ?: Timestamp.now()
+                    )
+
+                    requests.add(request)
                 } catch (e: Exception) {
                     Log.e(TAG, "Error procesando solicitud: ${e.message}", e)
-                    null
+                    // Continuar con el siguiente documento
                 }
             }
+
+            return requests
         } catch (e: Exception) {
             Log.e(TAG, "Error obteniendo solicitudes: ${e.message}", e)
             return emptyList()
@@ -341,6 +354,98 @@ class SubscriptionManager(
             false
         }
     }
+    /**
+     * Actualiza una suscripción existente manteniendo sincronizados ambos lugares:
+     * la colección "suscripciones" y el campo "subscription" en el documento del lubricentro.
+     *
+     * @param subscriptionId El ID del documento en la colección "suscripciones"
+     * @param lubricentroId El ID del lubricentro
+     * @param cambiosRestantes Cantidad de cambios que quedan disponibles
+     * @param cambiosTotales Total de cambios permitidos en la suscripción
+     * @param cambiosRealizados Cantidad de cambios ya realizados
+     * @return true si la actualización fue exitosa, false en caso contrario
+     */
+    suspend fun updateSubscription(
+        subscriptionId: String,
+        lubricentroId: String,
+        cambiosRestantes: Int,
+        cambiosTotales: Int,
+        cambiosRealizados: Int
+    ): Boolean {
+        return try {
+            // 1. Actualizar en la colección suscripciones
+            db.collection("suscripciones")
+                .document(subscriptionId)
+                .update(
+                    "cambiosRestantes", cambiosRestantes,
+                    "cambiosTotales", cambiosTotales,
+                    "cambiosRealizados", cambiosRealizados
+                )
+                .await()
+
+            // 2. Actualizar en el documento del lubricentro
+            db.collection("lubricentros")
+                .document(lubricentroId)
+                .update(
+                    "subscription.availableChanges", cambiosRestantes,
+                    "subscription.totalChangesAllowed", cambiosTotales,
+                    "subscription.changesUsed", cambiosRealizados
+                )
+                .await()
+
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error actualizando suscripción: ${e.message}", e)
+            false
+        }
+    }
+
+    /**
+     * Renueva una suscripción existente con nueva fecha de fin y nuevo total de cambios.
+     *
+     * @param subscriptionId El ID del documento en la colección "suscripciones"
+     * @param lubricentroId El ID del lubricentro
+     * @param nuevaFechaFin La nueva fecha de fin de la suscripción
+     * @param cambiosTotales El nuevo total de cambios permitidos
+     * @return true si la renovación fue exitosa, false en caso contrario
+     */
+    suspend fun renovarSuscripcion(
+        subscriptionId: String,
+        lubricentroId: String,
+        nuevaFechaFin: Timestamp,
+        cambiosTotales: Int
+    ): Boolean {
+        return try {
+            // 1. Actualizar en la colección suscripciones
+            db.collection("suscripciones")
+                .document(subscriptionId)
+                .update(
+                    "fechaFin", nuevaFechaFin,
+                    "cambiosTotales", cambiosTotales,
+                    "cambiosRestantes", cambiosTotales,
+                    "cambiosRealizados", 0
+                )
+                .await()
+
+            // 2. Actualizar en el documento del lubricentro
+            db.collection("lubricentros")
+                .document(lubricentroId)
+                .update(
+                    "subscription.endDate", nuevaFechaFin,
+                    "subscription.totalChangesAllowed", cambiosTotales,
+                    "subscription.availableChanges", cambiosTotales,
+                    "subscription.changesUsed", 0
+                )
+                .await()
+
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Error renovando suscripción: ${e.message}", e)
+            false
+        }
+    }
+
+
 }
 
 /**
@@ -360,4 +465,6 @@ fun Suscripcion.toFirebaseMap(): Map<String, Any> {
         "createdAt" to createdAt,
         "updatedAt" to Timestamp.now()
     )
+
+
 }
